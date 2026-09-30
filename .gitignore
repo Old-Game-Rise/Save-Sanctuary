@@ -1,0 +1,96 @@
+# ------------------------------------------------------------------ #
+# Save Sanctuary — runtime data (never commit these)
+# ------------------------------------------------------------------ #
+user saves/
+thumbnails/
+cloud_backup/
+
+# ------------------------------------------------------------------ #
+# Python
+# ------------------------------------------------------------------ #
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# PyInstaller / cx_Freeze / Nuitka build outputs
+*.spec.bak
+dist/
+build/
+*.manifest
+
+# ------------------------------------------------------------------ #
+# IDE / editor
+# ------------------------------------------------------------------ #
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# ------------------------------------------------------------------ #
+# OS junk
+# ------------------------------------------------------------------ #
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ------------------------------------------------------------------ #
+# Logs and local config
+# ------------------------------------------------------------------ #
+*.log
+logs/
+config.local.json
+
+# ------------------------------------------------------------------ #
+# Credentials / secrets (defensive — we don't store any, but just in case)
+# ------------------------------------------------------------------ #
+credentials.json
+token.json
+auth.json
+*.pem
+*.key
+
+# ------------------------------------------------------------------ #
+# Pillow / tkinter caches (rare, but harmless to ignore)
+# ------------------------------------------------------------------ #
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
