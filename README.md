@@ -1,10 +1,17 @@
 # Save Sanctuary
 
+A desktop application for backing up, organizing, and syncing your game save files. Built with Python and Tkinter.
+
+Author: [OldGameRise](https://github.com/Old-Game-Rise)
+Repository: [Old-Game-Rise/Save-Sanctuary](https://github.com/Old-Game-Rise/Save-Sanctuary)
+
+---
+
+![Save Sanctuary Screenshot](screenshot/1.png)
+
 ## Overview
 
 Save Sanctuary keeps your game saves in one place, shows them as visual cards with thumbnails, and lets you back them up to your own private GitHub repository. It works with both single save files and whole save folders, so it handles everything from a lone `.sav` file to a directory full of Cemu or RPCS3 profiles.
-
-![Screenshot](screenshot/1.png)
 
 Key features:
 
@@ -185,17 +192,7 @@ The result is placed in `dist/SaveSanctuary/`. Add `--onefile` if you prefer a s
 
 ---
 
-## Contributing
-
-Issues and pull requests are welcome. If you find a bug, please include:
-
-- Your operating system and Python version
-- The steps to reproduce the problem
-- Any relevant output from the console or log files
-
----
 
 ## License
 
 Released under the MIT License. See [LICENSE](LICENSE) for details.
-</｜｜DSML｜｜ parameter>
