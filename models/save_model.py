@@ -297,3 +297,57 @@ class SaveModel:
             p = self.base_dir / p
         return p if p.exists() else None
 
+    def renew_save(self, folder_name, source_override=None):
+        """
+        Replace `user saves/<folder_name>/save/` with fresh content.
+
+        - If `source_override` is provided, that path is used.
+        - Otherwise the path recorded in config.json (`original_path`) is used.
+
+        Returns the source path that was actually used, as a string.
+
+        NOTE: config.json's `original_path` is never modified here — a
+        user-chosen override applies to this operation only.
+        """
+        folder = self.user_saves_dir / folder_name
+        cfg_path = folder / "config.json"
+        if not cfg_path.exists():
+            raise FileNotFoundError(f"Save '{folder_name}' has no config.json.")
+
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        is_dir = bool(config.get("original_is_dir", True))
+
+        if source_override is not None:
+            source = Path(source_override)
+        else:
+            source = Path(config.get("original_path", ""))
+
+        if not source.exists():
+            raise FileNotFoundError(f"Source not found: {source}")
+
+        save_dir = folder / "save"
+
+        # Wipe the existing save folder so we don't leave stale files behind.
+        if save_dir.exists():
+            shutil.rmtree(save_dir)
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        if is_dir:
+            # Copy contents of the source folder into `save/`.
+            self._copy_contents(source, save_dir)
+        else:
+            if source.is_dir():
+                raise ValueError(
+                    "This save was imported as a single file, but a folder was given."
+                )
+            shutil.copy2(source, save_dir / source.name)
+
+        # Bump updated_at so the sync dialog knows something changed.
+        config["updated_at"] = _now_iso()
+        with open(cfg_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=4)
+
+        return str(source)
+

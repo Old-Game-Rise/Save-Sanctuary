@@ -42,6 +42,8 @@ class MainWindow:
         menubar.add_cascade(label="File", menu=file_menu)
 
         save_menu = tk.Menu(menubar, tearoff=0)
+        save_menu.add_command(label="Renew",
+                              command=self.controller.renew_selected)
         save_menu.add_command(label="Edit...",
                               command=self.controller.edit_selected)
         save_menu.add_command(label="Export",
@@ -209,6 +211,9 @@ class MainWindow:
         )
         self.selected_label.pack(anchor="w", padx=14, pady=(0, 10))
 
+        ttk.Button(right, text="Renew",
+                   command=self.controller.renew_selected,
+                   **btn_cfg).pack(padx=14, pady=4)
         ttk.Button(right, text="Edit",
                    command=self.controller.edit_selected,
                    **btn_cfg).pack(padx=14, pady=4)

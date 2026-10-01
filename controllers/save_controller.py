@@ -12,6 +12,8 @@ from controllers.cloud.manager import CloudManager
 from views.cloud_dialog import CloudUploadDialog
 from views.sync_dialog import SyncDialog
 
+from views.confirm_dialog import ConfirmDialog
+
 
 class SaveController:
     """Wires the model and the views together."""
@@ -129,6 +131,77 @@ class SaveController:
         save = self._get_selected_save()
         if save:
             self.edit_save(save)
+
+
+    # ------------------------------------------------------------------ #
+    # Renew
+    # ------------------------------------------------------------------ #
+    def renew_save(self, save):
+        folder_name = save["folder_name"]
+        config = self.model.get_config(folder_name)
+        original_path = config.get("original_path", "")
+        is_dir = bool(config.get("original_is_dir", True))
+
+        source_override = None
+        original_exists = bool(original_path) and Path(original_path).exists()
+
+        if not original_exists:
+            display = original_path or "(no path recorded)"
+            proceed = self._ask_missing_source(save.get("title", folder_name),
+                                               display)
+            if not proceed:
+                return
+
+            picked = self._pick_renewal_source(is_dir)
+            if not picked:
+                return
+            source_override = picked
+
+        try:
+            used = self.model.renew_save(folder_name,
+                                         source_override=source_override)
+        except Exception as exc:
+            messagebox.showerror("Renew failed", str(exc), parent=self.root)
+            return
+
+        self.refresh()
+        self.view.select(folder_name)
+        messagebox.showinfo(
+            "Renew complete",
+            f"Save refreshed from:\n{used}",
+            parent=self.root,
+        )
+
+    def renew_selected(self):
+        save = self._get_selected_save()
+        if save:
+            self.renew_save(save)
+
+    def _ask_missing_source(self, title, display_path):
+        dialog = ConfirmDialog(
+            self.root,
+            title="Original save not found",
+            message=(
+                f"The original save for \"{title}\" could not be found:\n\n"
+                f"{display_path}\n\n"
+                "Do you want to select a different source?\n\n"
+                "Note: the recorded original path will NOT be changed."
+            ),
+            yes_text="Yes", no_text="No",
+        )
+        self.root.wait_window(dialog)
+        return dialog.result
+
+    def _pick_renewal_source(self, is_dir):
+        if is_dir:
+            return filedialog.askdirectory(
+                title="Select the save folder to renew from",
+                parent=self.root,
+            )
+        return filedialog.askopenfilename(
+            title="Select the save file to renew from",
+            parent=self.root,
+        )
 
     # ------------------------------------------------------------------ #
     # Delete

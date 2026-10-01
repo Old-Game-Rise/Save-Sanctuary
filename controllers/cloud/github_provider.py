@@ -196,7 +196,7 @@ class GitHubProvider(CloudProvider):
                 _run(["gh", "repo", "create", self.repo_name,
                       "--private",
                       "--description",
-                      "Game save backups (created by Game Save Manager)"],
+                      "Game save backups (created by SAVE SANCTUARY)"],
                      timeout=60)
             r = _run(["gh", "repo", "view", self.repo_name,
                       "--json", "url"], timeout=30)
