@@ -5,9 +5,8 @@ A desktop application for backing up, organizing, and syncing your game save fil
 Author: [OldGameRise](https://github.com/Old-Game-Rise)
 Repository: [Old-Game-Rise/Save-Sanctuary](https://github.com/Old-Game-Rise/Save-Sanctuary)
 
----
-
 ![Save Sanctuary Screenshot](screenshot/1.png)
+---
 
 ## Overview
 
