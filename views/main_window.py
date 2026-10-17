@@ -55,8 +55,7 @@ class MainWindow:
                               command=self.controller.sync_with_cloud)
         save_menu.add_command(label="Upload to Cloud",
                               command=self.controller.upload_selected_to_cloud)
-        save_menu.add_command(label="Upload to Cloud",
-                              command=self.controller.upload_selected_to_cloud)
+
         save_menu.add_separator()
         save_menu.add_command(label="Delete...",
                               command=self.controller.delete_selected)
@@ -195,6 +194,7 @@ class MainWindow:
         ttk.Button(right, text="Import Save",
                    command=self.controller.import_save,
                    **btn_cfg).pack(padx=14, pady=(14, 4))
+        
 
         ttk.Button(right, text="Refresh",
                    command=self.controller.refresh,

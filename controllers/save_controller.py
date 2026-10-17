@@ -14,6 +14,8 @@ from views.sync_dialog import SyncDialog
 
 from views.confirm_dialog import ConfirmDialog
 
+from views.steam_preset_dialog import SteamPresetDialog
+
 
 class SaveController:
     """Wires the model and the views together."""
@@ -67,6 +69,54 @@ class SaveController:
         if kind is None:
             return
 
+        # --- DRM-free Steam preset ---
+        if kind == "steam":
+            preset = SteamPresetDialog(self.root, self.model.base_dir)
+            self.root.wait_window(preset)
+            picked = preset.result
+            if not picked:
+                return
+
+            source = picked["folder_path"]
+            suggested_title = picked["title"] or f"AppID {picked['appid']}"
+            prefill = {
+                "title": suggested_title,
+                "folder_name": suggested_title,
+                "description": "",
+                "thumbnail": None,
+            }
+
+            dialog = SaveDialog(
+                self.root,
+                title="Import DRM-free Steam Save",
+                save_data=prefill,
+            )
+            self.root.wait_window(dialog)
+            if not dialog.result:
+                return
+
+            try:
+                final_name = self.model.import_save(
+                    source,
+                    dialog.result["title"],
+                    dialog.result["folder_name"],
+                    dialog.result["thumbnail_path"],
+                    dialog.result.get("description", ""),
+                )
+            except Exception as exc:
+                messagebox.showerror("Import failed", str(exc), parent=self.root)
+                return
+
+            self.refresh()
+            self.view.select(final_name)
+            messagebox.showinfo(
+                "Import complete",
+                f"Save imported as '{final_name}'.",
+                parent=self.root,
+            )
+            return
+
+        # --- Existing file / folder flow ---
         if kind == "file":
             source = filedialog.askopenfilename(
                 title="Select a save file", parent=self.root)
@@ -337,6 +387,7 @@ class SaveController:
         
     # ------------------------------------------------------------------ #
     def _ask_import_type(self):
+        """Three-way chooser: Single File / Folder / DRM-free Steam Save."""
         dialog = tk.Toplevel(self.root)
         dialog.title("Import")
         dialog.transient(self.root)
@@ -346,7 +397,14 @@ class SaveController:
         result = {"value": None}
 
         ttk.Label(dialog, text="What would you like to import?",
-                  font=("Arial", 11)).pack(padx=30, pady=(20, 15))
+                  font=("Arial", 11)).pack(padx=30, pady=(20, 10))
+
+        ttk.Label(
+            dialog,
+            text=("Tip: 'DRM-free Steam Save' scans RUNE / CODEX folders\n"
+                  "under C:\\Users\\Public\\Documents\\Steam automatically."),
+            foreground="#666666", justify=tk.CENTER, font=("Arial", 9),
+        ).pack(padx=20, pady=(0, 16))
 
         btn_frame = ttk.Frame(dialog)
         btn_frame.pack(padx=20, pady=(0, 20))
@@ -355,13 +413,59 @@ class SaveController:
             result["value"] = value
             dialog.destroy()
 
-        ttk.Button(btn_frame, text="Single File", width=14,
-                   command=lambda: choose("file")).pack(side=tk.LEFT, padx=6)
-        ttk.Button(btn_frame, text="Folder", width=14,
-                   command=lambda: choose("folder")).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btn_frame, text="Single File", width=16,
+                   command=lambda: choose("file")).pack(side=tk.LEFT, padx=4)
+        ttk.Button(btn_frame, text="Folder", width=16,
+                   command=lambda: choose("folder")).pack(side=tk.LEFT, padx=4)
+        ttk.Button(btn_frame, text="DRM-free Steam Save", width=22,
+                   command=lambda: choose("steam")).pack(side=tk.LEFT, padx=4)
 
         dialog.bind("<Escape>", lambda e: dialog.destroy())
         center_on_parent(dialog, self.root)
 
         self.root.wait_window(dialog)
         return result["value"]
+
+    def import_drm_steam(self):
+        dialog = SteamPresetDialog(self.root, self.model.base_dir)
+        self.root.wait_window(dialog)
+        picked = dialog.result
+        if not picked:
+            return
+
+        folder_path = picked["folder_path"]
+        suggested_title = picked["title"] or f"AppID {picked['appid']}"
+
+        # Open the normal SaveDialog, pre-filled.
+        save_dialog = SaveDialog(
+            self.root, title="Import DRM-free Steam Save",
+            save_data={
+                "title": suggested_title,
+                "folder_name": suggested_title,
+                "description": "",
+                "thumbnail": None,
+            },
+        )
+        self.root.wait_window(save_dialog)
+        if not save_dialog.result:
+            return
+
+        try:
+            final_name = self.model.import_save(
+                folder_path,
+                save_dialog.result["title"],
+                save_dialog.result["folder_name"],
+                save_dialog.result["thumbnail_path"],
+                save_dialog.result.get("description", ""),
+            )
+        except Exception as exc:
+            messagebox.showerror("Import failed", str(exc), parent=self.root)
+            return
+
+        self.refresh()
+        self.view.select(final_name)
+        messagebox.showinfo(
+            "Import complete",
+            f"Imported '{suggested_title}' as '{final_name}'.",
+            parent=self.root,
+        )

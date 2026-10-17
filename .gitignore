@@ -94,3 +94,6 @@ auth.json
 .ruff_cache/
 .coverage
 htmlcov/
+
+steam_appid_cache.json
+SaveSanctuary.spec
