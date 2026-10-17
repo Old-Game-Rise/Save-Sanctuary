@@ -66,6 +66,19 @@ Click **Import Save** and choose whether you want to import a single file or a w
 
 Once confirmed, the save is copied into the `user saves` folder along with a `config.json` that records its metadata and original location.
 
+### Importing DRM-free Steam saves
+
+Many DRM-free games — especially those distributed with Steam emulators such as
+**RUNE** or **CODEX** — store their save files in a predictable place:
+
+C:\Users\Public\Documents\Steam\RUNE<AppID>
+
+C:\Users\Public\Documents\Steam\CODEX<AppID>\
+
+The folder name is the game's numeric **Steam AppID** (for example, `761600` is
+*Onimusha: Warlords*). Save Sanctuary can scan these folders for you and look up
+each game's real name, so you don't have to hunt down the right subfolder by hand.
+
 ### Renewing a save
 
 If you have been playing since your last import and want to refresh the copy inside Save Sanctuary with your latest progress, select the save and click **Renew**. The app copies the current contents of the original save location back into the archive, replacing what was there.
