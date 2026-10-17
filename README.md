@@ -1,6 +1,7 @@
 # Save Sanctuary
 
 A desktop application for backing up, organizing, and syncing your game save files. Built with Python and Tkinter.
+The idea came from me playing non steam DRM free games (You know what I mean) and this game's save files would be lost forever if I removed them so that is when Save Sanctuary comes for the aid.
 
 Author: [OldGameRise](https://github.com/Old-Game-Rise)
 Repository: [Old-Game-Rise/Save-Sanctuary](https://github.com/Old-Game-Rise/Save-Sanctuary)
