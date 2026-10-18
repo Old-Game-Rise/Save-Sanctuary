@@ -16,6 +16,7 @@ from views.confirm_dialog import ConfirmDialog
 
 from views.steam_preset_dialog import SteamPresetDialog
 
+from models.steam_art import fetch_steam_library_art, cleanup_temp
 
 class SaveController:
     """Wires the model and the views together."""
@@ -78,34 +79,48 @@ class SaveController:
                 return
 
             source = picked["folder_path"]
-            suggested_title = picked["title"] or f"AppID {picked['appid']}"
+            appid = picked["appid"]
+            suggested_title = picked["title"] or f"AppID {appid}"
+
+            # Try to grab the Steam library art into a temp file.
+            temp_thumb, temp_dir = fetch_steam_library_art(appid)
+
             prefill = {
                 "title": suggested_title,
                 "folder_name": suggested_title,
                 "description": "",
-                "thumbnail": None,
+                "thumbnail": temp_thumb,
+                "thumbnail_is_new": True,
             }
 
-            dialog = SaveDialog(
-                self.root,
-                title="Import DRM-free Steam Save",
-                save_data=prefill,
-            )
-            self.root.wait_window(dialog)
-            if not dialog.result:
-                return
-
             try:
-                final_name = self.model.import_save(
-                    source,
-                    dialog.result["title"],
-                    dialog.result["folder_name"],
-                    dialog.result["thumbnail_path"],
-                    dialog.result.get("description", ""),
+                dialog = SaveDialog(
+                    self.root,
+                    title="Import DRM-free Steam Save",
+                    save_data=prefill,
                 )
-            except Exception as exc:
-                messagebox.showerror("Import failed", str(exc), parent=self.root)
-                return
+                self.root.wait_window(dialog)
+                if not dialog.result:
+                    return
+
+                try:
+                    final_name = self.model.import_save(
+                        source,
+                        dialog.result["title"],
+                        dialog.result["folder_name"],
+                        dialog.result["thumbnail_path"],
+                        dialog.result.get("description", ""),
+                    )
+                except Exception as exc:
+                    messagebox.showerror(
+                        "Import failed", str(exc), parent=self.root)
+                    return
+            finally:
+                # Temp file is no longer needed once SaveDialog is done:
+                # - if user confirmed, _save_thumbnail has already copied it
+                #   into thumbnails/
+                # - if user cancelled, we just discard it
+                cleanup_temp(temp_dir)
 
             self.refresh()
             self.view.select(final_name)

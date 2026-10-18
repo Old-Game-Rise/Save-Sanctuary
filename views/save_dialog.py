@@ -117,13 +117,14 @@ class SaveDialog(tk.Toplevel):
             if description:
                 self.description_text.insert("1.0", description)
 
-            if self.thumbnail_path:
-                p = Path(self.thumbnail_path)
-                if not p.is_absolute():
-                    p = Path(__file__).resolve().parent.parent / p
-                if p.exists():
-                    self.thumb_name_label.configure(text=p.name)
-                    self._show_preview(str(p))
+            # If the caller pre-fills a thumbnail (e.g. the Steam CDN image),
+            # treat it as new so import_save copies it into thumbnails/.
+            if self.save_data.get("thumbnail_is_new"):
+                self.thumbnail_changed = True
+
+            if self.thumbnail_path and Path(self.thumbnail_path).exists():
+                self.thumb_name_label.configure(text=Path(self.thumbnail_path).name)
+                self._show_preview(self.thumbnail_path)
         else:
             self._on_same_toggle()
 

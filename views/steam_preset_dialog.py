@@ -8,11 +8,31 @@ from tkinter import ttk
 
 from views.utils import center_on_parent
 
+import os
+from pathlib import Path
 
-STEAM_DRM_ROOTS = [
-    Path(r"C:\Users\Public\Documents\Steam\RUNE"),
-    Path(r"C:\Users\Public\Documents\Steam\CODEX"),
-]
+
+def _steam_drm_sources():
+    """Return [(label, root_path), ...] — every place we look for DRM saves."""
+    sources = [
+        ("RUNE",      Path(r"C:\Users\Public\Documents\Steam\RUNE")),
+        ("CODEX",     Path(r"C:\Users\Public\Documents\Steam\CODEX")),
+        ("OnlineFix", Path(r"C:\Users\Public\Documents\OnlineFix")),
+    ]
+
+    # Goldberg lives under %APPDATA%\Goldberg SteamEmu Saves on Windows.
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        sources.append((
+            "Goldberg",
+            Path(appdata) / "Goldberg SteamEmu Saves",
+        ))
+
+    return sources
+
+
+# Subfolders to ignore inside a source root (they're not game save folders).
+IGNORED_SUBFOLDERS = {"settings"}
 
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 540
@@ -158,6 +178,12 @@ class SteamPresetDialog(tk.Toplevel):
         )
         self.use_btn.pack(side=tk.LEFT, padx=4)
 
+        self.rescan_btn = ttk.Button(
+            btn_row, text="Rescan", width=10,
+            command=self._on_rescan,
+        )
+        self.rescan_btn.pack(side=tk.LEFT, padx=4)
+
         ttk.Button(
             btn_row, text="Cancel", width=12,
             command=self._on_close,
@@ -176,13 +202,19 @@ class SteamPresetDialog(tk.Toplevel):
     def _scan_worker(self):
         try:
             found = []
-            for root in STEAM_DRM_ROOTS:
+            for source_name, root in _steam_drm_sources():
                 if not root.exists() or not root.is_dir():
                     continue
-                source_name = root.name  # "RUNE" or "CODEX"
                 for folder in sorted(root.iterdir()):
-                    if not folder.is_dir() or not folder.name.isdigit():
+                    if not folder.is_dir():
                         continue
+
+                    # Skip non-numeric folders and known non-game folders.
+                    if folder.name.lower() in IGNORED_SUBFOLDERS:
+                        continue
+                    if not folder.name.isdigit():
+                        continue
+
                     appid = folder.name
                     cached = self._cache.get(appid)
                     if cached is not None:
@@ -192,6 +224,7 @@ class SteamPresetDialog(tk.Toplevel):
                         name = _resolve_appid_name(appid)
                         self._cache[appid] = name
                         self._cache_dirty = True
+
                     found.append({
                         "appid": appid,
                         "title": name,
@@ -199,7 +232,6 @@ class SteamPresetDialog(tk.Toplevel):
                         "folder_path": str(folder.resolve()),
                     })
 
-            # Sort resolved games alphabetically, then unresolved by AppID.
             found.sort(key=lambda r: (
                 r["title"] is None,
                 (r["title"] or "").lower(),
@@ -226,11 +258,13 @@ class SteamPresetDialog(tk.Toplevel):
 
         if not found:
             self.status_label.configure(
-                text=("No DRM-free Steam saves were found in:\n"
+                text=("No DRM-free Steam saves were found. Looked in:\n"
                       "  • C:\\Users\\Public\\Documents\\Steam\\RUNE\n"
-                      "  • C:\\Users\\Public\\Documents\\Steam\\CODEX\n\n"
-                      "If those folders don't exist on your PC, use the normal "
-                      "'Import Save' option instead."),
+                      "  • C:\\Users\\Public\\Documents\\Steam\\CODEX\n"
+                      "  • C:\\Users\\Public\\Documents\\OnlineFix\n"
+                      "  • %APPDATA%\\Goldberg SteamEmu Saves\n\n"
+                      "If none of these exist on your PC, use the normal "
+                      "'Single File' or 'Folder' import instead."),
                 foreground="#a04000",
             )
             return
@@ -253,6 +287,19 @@ class SteamPresetDialog(tk.Toplevel):
         self._busy = False
         self.progress.stop()
         self.status_label.configure(text=f"Scan error: {err}", foreground="red")
+
+    def _on_rescan(self):
+        if self._busy:
+            return
+        for iid in self.tree.get_children():
+            self.tree.delete(iid)
+        self._rows.clear()
+        self.use_btn.configure(state=tk.DISABLED)
+        self.status_label.configure(
+            text="Rescanning DRM-free save folders...",
+            foreground="#333333",
+        )
+        self._start_scan()
 
     # ------------------------------------------------------------------ #
     # Selection
