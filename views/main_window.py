@@ -61,6 +61,11 @@ class MainWindow:
                               command=self.controller.delete_selected)
         menubar.add_cascade(label="Save", menu=save_menu)
 
+        settings_menu = tk.Menu(menubar, tearoff=0)
+        settings_menu.add_command(label="Open Settings...",
+                                  command=self.controller.open_settings)
+        menubar.add_cascade(label="Settings", menu=settings_menu)
+
         help_menu = tk.Menu(menubar, tearoff=0)
         help_menu.add_command(label="About", command=self._show_about)
         menubar.add_cascade(label="Help", menu=help_menu)

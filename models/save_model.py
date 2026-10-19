@@ -20,14 +20,73 @@ def _rel_to_app(self, abs_path):
 class SaveModel:
     """Handles all filesystem operations for game saves."""
 
-    def __init__(self, base_dir=None):
-        if base_dir is None:
-            base_dir = Path(__file__).resolve().parent.parent
-        self.base_dir = Path(base_dir)
-        self.user_saves_dir = self.base_dir / "user saves"
-        self.thumbnails_dir = self.base_dir / "thumbnails"
+    def __init__(self, app_dir=None, save_root=None):
+        if app_dir is None:
+            app_dir = Path(__file__).resolve().parent.parent
+        self.app_dir = Path(app_dir).resolve()
+        self.set_save_root(save_root or self.app_dir)
+
+    def set_save_root(self, root):
+        self.save_root = Path(root).resolve()
+        self.user_saves_dir = self.save_root / "user saves"
+        self.thumbnails_dir = self.save_root / "thumbnails"
         self.user_saves_dir.mkdir(parents=True, exist_ok=True)
         self.thumbnails_dir.mkdir(parents=True, exist_ok=True)
+
+    # add this method near the top
+    def relocate(self, new_root):
+        """
+        Move user saves + thumbnails to `new_root`.
+        Thumbnail paths in configs are stored relative to the app dir, so
+        after the move we rewrite them (relative to the new root).
+
+        Raises OSError on failure (partial move possible; caller should
+        surface the message and refresh).
+        """
+        new_root = Path(new_root).resolve()
+        new_root.mkdir(parents=True, exist_ok=True)
+
+        old_saves = self.user_saves_dir
+        old_thumbs = self.thumbnails_dir
+
+        new_saves = new_root / "user saves"
+        new_thumbs = new_root / "thumbnails"
+
+        if old_saves.resolve() == new_saves.resolve():
+            return  # nothing to do
+
+        import shutil
+
+        if old_saves.exists():
+            if new_saves.exists():
+                raise OSError(
+                    f"Destination already contains 'user saves':\n{new_saves}")
+            shutil.move(str(old_saves), str(new_saves))
+
+        if old_thumbs.exists():
+            if new_thumbs.exists():
+                raise OSError(
+                    f"Destination already contains 'thumbnails':\n{new_thumbs}")
+            shutil.move(str(old_thumbs), str(new_thumbs))
+
+        # Update in-memory paths and rewrite each config's thumbnail field.
+        self.set_save_root(new_root)
+        for cfg_path in self.user_saves_dir.glob("*/config.json"):
+            try:
+                with open(cfg_path, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                thumb = cfg.get("thumbnail")
+                if thumb and not Path(thumb).is_absolute():
+                    # Already relative — nothing to rewrite.
+                    continue
+                if thumb:
+                    p = Path(thumb)
+                    if p.exists() and p.parent.name == "thumbnails":
+                        cfg["thumbnail"] = f"thumbnails/{p.name}"
+                        with open(cfg_path, "w", encoding="utf-8") as f:
+                            json.dump(cfg, f, indent=4)
+            except (OSError, json.JSONDecodeError):
+                continue
 
     # ------------------------------------------------------------------ #
     # Reading
@@ -294,7 +353,7 @@ class SaveModel:
             return None
         p = Path(stored)
         if not p.is_absolute():
-            p = self.base_dir / p
+            p = self.save_root / p
         return p if p.exists() else None
 
     def renew_save(self, folder_name, source_override=None):

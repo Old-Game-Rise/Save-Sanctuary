@@ -142,10 +142,12 @@ def detect_auth():
 class GitHubProvider(CloudProvider):
     NAME = "GitHub"
 
-    def __init__(self, app_dir, repo_name="game-save-manager-backups"):
+    def __init__(self, app_dir, save_root=None,
+                repo_name="game-save-manager-backups"):
         self.app_dir = Path(app_dir).resolve()
-        self.user_saves_dir = self.app_dir / "user saves"
-        self.local_thumbs_dir = self.app_dir / "thumbnails"
+        save_root = Path(save_root or self.app_dir).resolve()
+        self.user_saves_dir = save_root / "user saves"
+        self.local_thumbs_dir = save_root / "thumbnails"
         self.work_dir = self.app_dir / "cloud_backup"
         self.repo_name = repo_name
         self.auth = None

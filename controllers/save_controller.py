@@ -18,16 +18,75 @@ from views.steam_preset_dialog import SteamPresetDialog
 
 from models.steam_art import fetch_steam_library_art, cleanup_temp
 
+from controllers.settings_store import SettingsStore
+from controllers.cloud.manager import CloudManager
+from views.provider_picker import ProviderPickerDialog
+from views.settings_window import SettingsWindow
+
 class SaveController:
     """Wires the model and the views together."""
 
     def __init__(self):
         self.root = tk.Tk()
-        self.model = SaveModel()
-        self.cloud = CloudManager(self.model.base_dir)
+        self.app_dir = Path(__file__).resolve().parent.parent
+        self.settings = SettingsStore(self.app_dir)
+
+        self.model = SaveModel(self.app_dir,
+                               save_root=self.settings.get_save_root())
+        self.cloud = CloudManager(self.app_dir,
+                                  save_root=self.model.save_root)
+        self.cloud.set_active(
+            {"github": "github", "gdrive": "gdrive"}.get(
+                self.settings.get_cloud_provider(), "github"))
+
         self.view = MainWindow(self.root, self)
         self._selected_folder = None
         self.refresh()
+
+    # ------------------------------------------------------------------ #
+    # Settings
+    # ------------------------------------------------------------------ #
+    def open_settings(self):
+        win = SettingsWindow(self.root, self)
+        self.root.wait_window(win)
+        self.refresh()
+
+    def on_cloud_provider_setting_changed(self, value):
+        if value in ("github", "gdrive"):
+            self.cloud.set_active(value)
+
+    def move_save_root(self, new_root):
+        self.model.relocate(new_root)
+        self.settings.set_save_root(self.model.save_root)
+        self.cloud.rebuild(self.model.save_root)
+        self.refresh()
+
+    # ------------------------------------------------------------------ #
+    # Provider resolution for upload / sync
+    # ------------------------------------------------------------------ #
+    def _resolve_provider(self, title):
+        """
+        Decide which provider to use based on the persisted setting.
+
+        Returns a provider key ("github" or "gdrive"), or None if the user
+        cancelled.
+        """
+        setting = self.settings.get_cloud_provider()
+        if setting in ("github", "gdrive"):
+            self.cloud.set_active(setting)
+            return setting
+
+        dialog = ProviderPickerDialog(self.root, title=title)
+        self.root.wait_window(dialog)
+        picked = dialog.result
+        if not picked:
+            return None
+
+        if picked["remember"]:
+            self.settings.set_cloud_provider(picked["provider"])
+
+        self.cloud.set_active(picked["provider"])
+        return picked["provider"]
 
     def run(self):
         self.root.mainloop()
@@ -356,16 +415,16 @@ class SaveController:
     # Cloud
     # ------------------------------------------------------------------ #
     def upload_to_cloud(self, save=None):
-        """Kick off a full backup of every save to the cloud."""
+        provider_key = self._resolve_provider("Upload to Cloud")
+        if not provider_key:
+            return
+
         provider = self.cloud.get_provider()
         provider.detect()
 
         if not provider.is_ready():
             messagebox.showinfo(
-                "Upload to Cloud",
-                provider.status_text(),
-                parent=self.root,
-            )
+                "Upload to Cloud", provider.status_text(), parent=self.root)
             return
 
         saves = self.model.list_saves()
@@ -373,8 +432,7 @@ class SaveController:
             messagebox.showinfo(
                 "Upload to Cloud",
                 "There are no saves to upload yet.",
-                parent=self.root,
-            )
+                parent=self.root)
             return
 
         dialog = CloudUploadDialog(self.root, self.cloud, len(saves))
@@ -385,19 +443,24 @@ class SaveController:
         self.upload_to_cloud()
 
     def sync_with_cloud(self):
+        provider_key = self._resolve_provider("Sync with Cloud")
+        if not provider_key:
+            return
+
         provider = self.cloud.get_provider()
         provider.detect()
 
         if not provider.is_ready():
             messagebox.showinfo(
-                "Sync with Cloud",
-                provider.status_text(),
-                parent=self.root,
-            )
+                "Sync with Cloud", provider.status_text(), parent=self.root)
             return
 
-        dialog = SyncDialog(self.root, self.cloud,
-                            on_finished=self.refresh)
+        try:
+            dialog = SyncDialog(self.root, self.cloud,
+                                on_finished=self.refresh)
+        except NotImplementedError as exc:
+            messagebox.showinfo("Sync with Cloud", str(exc), parent=self.root)
+            return
         self.root.wait_window(dialog)
         
     # ------------------------------------------------------------------ #
