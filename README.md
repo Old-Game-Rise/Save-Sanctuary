@@ -69,7 +69,7 @@ Once confirmed, the save is copied into the `user saves` folder along with a `co
 ### Importing DRM-free Steam saves
 
 Many DRM-free games — especially those distributed with Steam emulators such as
-**RUNE**, **CODEX**, **GoldBerg**, **OnlineFix** — store their save files in a predictable place:
+**RUNE**, **CODEX**, **GoldBerg**, **OnlineFix** — store their save files in a predictable place.
 
 
 The folder name is the game's numeric **Steam AppID** (for example, `761600` is
