@@ -69,11 +69,8 @@ Once confirmed, the save is copied into the `user saves` folder along with a `co
 ### Importing DRM-free Steam saves
 
 Many DRM-free games — especially those distributed with Steam emulators such as
-**RUNE** or **CODEX** — store their save files in a predictable place:
+**RUNE**, **CODEX**, **GoldBerg**, **OnlineFix** — store their save files in a predictable place:
 
-C:\Users\Public\Documents\Steam\RUNE<AppID>
-
-C:\Users\Public\Documents\Steam\CODEX<AppID>\
 
 The folder name is the game's numeric **Steam AppID** (for example, `761600` is
 *Onimusha: Warlords*). Save Sanctuary can scan these folders for you and look up
