@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 
+from resources import resource_path
+
 from models.save_model import SaveModel
 from views.main_window import MainWindow
 from views.save_dialog import SaveDialog
@@ -23,8 +25,25 @@ class SaveController:
 
     def __init__(self):
         self.root = tk.Tk()
+
+        # --- Window icon ---
+        icon_path = resource_path("icon.ico")
+        if icon_path.exists():
+            try:
+                self.root.iconbitmap(default=str(icon_path))
+            except tk.TclError:
+                # Linux / macOS: iconbitmap with .ico usually fails.
+                # Fall back to a PNG if one exists (see note below).
+                png = resource_path("icon.png")
+                if png.exists():
+                    try:
+                        from PIL import ImageTk, Image
+                        self._icon_photo = ImageTk.PhotoImage(Image.open(png))
+                        self.root.iconphoto(True, self._icon_photo)
+                    except Exception:
+                        pass
+
         self.model = SaveModel()
-        self.cloud = CloudManager(self.model.base_dir)
         self.view = MainWindow(self.root, self)
         self._selected_folder = None
         self.refresh()
